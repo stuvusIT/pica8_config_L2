@@ -1,0 +1,12 @@
+---
+switch_mtu: 1514
+switch_ports: []
+switch_default_vlan: default
+switch_default_port_disabled: true
+switch_defined_port_disabled: false
+switch_dhcp_snooping: false
+switch_dhcp_snooping_vlans: []
+switch_dhcp_bind_file: /tmp/run/dhcp_bind
+switch_dhcp_binding_timeout: 8
+switch_vlans:
+  default: 1

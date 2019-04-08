@@ -1,0 +1,268 @@
+/* {{ ansible_managed }}
+/*XORP Configuration File, v1.0*/
+class-of-service {
+}
+firewall {
+    filter copp {
+        description: ""
+        input {
+            interface "inbound-control-plane"
+        }
+    }
+}
+interface {
+    ecmp {
+        hash-mapping {
+            symmetric: false
+            field {
+                ingress-interface {
+                    disable: true
+                }
+                vlan {
+                    disable: true
+                }
+                ip-protocol {
+                    disable: true
+                }
+                ip-source {
+                    disable: false
+                }
+                ip-destination {
+                    disable: false
+                }
+                port-source {
+                    disable: false
+                }
+                port-destination {
+                    disable: false
+                }
+            }
+        }
+        max-path: 4
+    }
+    aggregate-balancing {
+        hash-mapping {
+            symmetric: false
+            field {
+                ingress-interface {
+                    disable: false
+                }
+                ethernet-source-address {
+                    disable: false
+                }
+                ethernet-destination-address {
+                    disable: false
+                }
+                ethernet-type {
+                    disable: false
+                }
+                vlan {
+                    disable: false
+                }
+                ip-protocol {
+                    disable: false
+                }
+                ip-source {
+                    disable: false
+                }
+                ip-destination {
+                    disable: false
+                }
+                port-source {
+                    disable: false
+                }
+                port-destination {
+                    disable: false
+                }
+            }
+        }
+    }
+    qe-interface-mode: "QSFP"
+    {% for port_number in range(1,55) -%}
+    {%- if switch_ports[port_number|string] is defined and switch_ports[port_number|string]['template'] is defined -%}
+    {%- set port_template = switch_ports[port_number|string].template -%}
+    {%- set port = switch_templates[port_template]|combine(switch_ports[port_number|string]|default({})) -%}
+    {%- else -%}
+    {%- set port = switch_ports[port_number|string] | default({}) -%}
+    {%- endif -%}
+
+    gigabit-ethernet "{% if port_number <= 48 %}ge{% else %}te{% endif %}-1/1/{{ port_number }}" {
+        description: "{{ port.description|default('') }}"
+        mtu: {{ port.mtu | default(switch_mtu) }}
+        disable: {% if port.disable|default(switch_default_port_disabled) -%}
+            {%- if not port.disable|default(switch_defined_port_disabled) and switch_ports[port_number|string] is defined %}false{% else %}true{% endif -%}
+        {%- else -%}
+            false
+        {%- endif %}
+
+        power-preemphasis-level: 0
+        family {
+            ethernet-switching {
+                native-vlan-id: {{ switch_vlans[port.native_vlan|default(switch_default_vlan)] }}
+                {% if port.members|default(switch_default_members)|length <= 0 -%}
+                port-mode: "access"
+                {%- else -%}
+                port-mode: "trunk"
+                vlan {
+                    {% for vlan in port.members|default(switch_default_members) -%}
+                    members {{ switch_vlans[vlan] }}
+                    {% endfor -%}
+                }
+                {%- endif %}
+
+            }
+        }
+        snmp-trap: true
+        loopback: false
+        mac-learning: true
+    }
+    {% endfor %}
+
+    ethernet-switching-options {
+        mac-table-aging-time: 300
+    }
+    cut-through-mode: true
+}
+ip {
+    routing {
+        enable: false
+    }
+}
+multicast-interface {
+}
+policy {
+}
+protocols {
+    dhcp {
+        snooping {
+            disable: {% if switch_dhcp_snooping %}false{% else %}true{% endif %}
+
+            {% for port_number in range(1,55) -%}
+            {%- if
+                ( switch_ports[port_number|string] is defined and
+                  switch_ports[port_number|string]['dhcp_server'] is defined and
+                  switch_ports[port_number|string]['dhcp_server'] ) or
+                ( switch_ports[port_number|string] is defined and
+                  switch_ports[port_number|string]['template'] is defined and
+                  switch_templates[switch_ports[port_number|string].template].dhcp_server|default(False) )-%}
+            port "{%if port_number <= 48 %}ge{% else %}te{% endif %}-1/1/{{ port_number }}" {
+                trust: true
+            }
+            {%- endif -%}
+            {% endfor %}
+
+            binding {
+                file: "{{ switch_dhcp_bind_file }}"
+                timeout: "{{ switch_dhcp_binding_timeout }}"
+            }
+            {% for vlan in switch_dhcp_snooping_vlans -%}
+            vlan {{ switch_vlans[vlan] }}
+            {%- else -%}
+            vlan all
+            {%- endfor %}
+
+        }
+    }
+    lacp {
+        priority: 32768
+    }
+    mpls {
+    }
+    spanning-tree {
+        enable: true
+        force-version: 3
+        pvst {
+            vlan 1 {
+                enable: true
+                bridge-priority: 32768
+                forward-delay: 15
+                hello-time: 2
+                max-age: 20
+            }
+        }
+    }
+}
+system {
+    login {
+        announcement: ""
+        user operator {
+            authentication {
+                plain-text-password: "$6$K8uicVe0$m4osaj8VjOwAbT.dTrG4VB4pjajxVeBQom6LGCqUP23Q53JH3sOjVtdypBaWszEm3Q8d/UZjvohhf2fR1llno1"
+            }
+            class: "read-only"
+        }
+    }
+    management-ethernet eth0 {
+        ip-address {
+            IPv4: "192.168.100.2/24"
+            IPv6: "0::0/0"
+        }
+    }
+    hostname: "{{ ansible_hostname }}"
+    services {
+        telnet {
+            root-login: "deny"
+            connection-limit: 20
+            rate-limit: 20
+            disable: true
+        }
+        ssh {
+            root-login: "deny"
+            protocol-version: "v2"
+            connection-limit: 20
+            rate-limit: 20
+            disable: false
+            idle-timeout: 0
+        }
+    }
+    ntp-server-ip 129.69.1.153
+    inband {
+        enable: false
+    }
+    syslog {
+        local-file: "ram"
+    }
+    aaa {
+        tacacs-plus {
+            disable: true
+            authorization: true
+            accounting: true
+            key: "keystring"
+            port-number: 49
+            auth-type: "ascii"
+            timeout: 5
+        }
+        radius {
+            authorization {
+                disable: true
+            }
+            accounting {
+                disable: true
+            }
+        }
+        local {
+            disable: false
+        }
+    }
+    log-level: "warning"
+    log-facility: 0
+    timezone: "Europe/Berlin"
+}
+vlan-interface {
+    loopback {
+    }
+}
+vlans {
+    {% for vlan in switch_vlans -%}
+
+    vlan-id {{ switch_vlans[vlan] }} {
+    description: "{{ vlan }}"
+        vlan-name: "{{ vlan }}"
+        l3-interface: ""
+    }
+    {% endfor %}
+
+}
+xovs {
+    enable: true
+}
