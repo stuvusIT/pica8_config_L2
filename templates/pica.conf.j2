@@ -121,7 +121,7 @@ interface {
     ethernet-switching-options {
         mac-table-aging-time: 300
     }
-    cut-through-mode: true
+    cut-through-mode: {% if switch_cut_through_mode %}true{% else %}false{% endif %}
 }
 ip {
     routing {
@@ -194,7 +194,7 @@ system {
     }
     management-ethernet eth0 {
         ip-address {
-            IPv4: "192.168.100.2/24"
+            IPv4: "{{ (ansible_default_ipv4.address+'/'+ansible_default_ipv4.netmask) | ipaddr('address/prefix') }}"
             IPv6: "0::0/0"
         }
     }
@@ -215,7 +215,12 @@ system {
             idle-timeout: 0
         }
     }
-    ntp-server-ip 129.69.1.153
+    ntp-server-ip {% if lookup('dig', switch_ntp_server) == 'NXDOMAIN' %}
+                      {{- switch_ntp_server }}
+                  {% else %}
+                      {{- lookup('dig', switch_ntp_server).split(',')[0] }}
+                  {%- endif %}
+
     inband {
         enable: false
     }
@@ -246,7 +251,7 @@ system {
     }
     log-level: "warning"
     log-facility: 0
-    timezone: "Europe/Berlin"
+    timezone: "{{ switch_time_zone }}"
 }
 vlan-interface {
     loopback {
