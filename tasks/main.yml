@@ -1,7 +1,7 @@
 ---
 - name: Push switch config
   template:
-    dest: /pica/config/root/ansible.conf
+    dest: /pica/config/ansible.conf
     group: xorp
     owner: admin
     mode: 0644
@@ -11,7 +11,7 @@
     - switch_config
 
 - name: Reload switch config
-  shell: /pica/bin/cli -c 'configure; load override ansible.conf; commit'
+  shell: cli -c 'configure; load override /pica/config/ansible.conf; commit'
   tags:
     - switch
     - switch_config

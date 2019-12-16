@@ -77,7 +77,7 @@ interface {
             }
         }
     }
-    qe-interface-mode: "QSFP"
+
     {% for port_number in range(1,55) -%}
     {%- if switch_ports[port_number|string] is defined and switch_ports[port_number|string]['template'] is defined -%}
     {%- set port_template = switch_ports[port_number|string].template -%}
@@ -86,7 +86,7 @@ interface {
     {%- set port = switch_ports[port_number|string] | default({}) -%}
     {%- endif -%}
 
-    gigabit-ethernet "{% if port_number <= 48 %}ge{% else %}te{% endif %}-1/1/{{ port_number }}" {
+    gigabit-ethernet "{% if port_number <= 48 %}ge-1/1/{{ port_number }}{% else %}te-1/1/{{ port_number - 48 }}{% endif %}" {
         description: "{{ port.description|default('') }}"
         mtu: {{ port.mtu | default(switch_mtu) }}
         disable: {% if port.disable|default(switch_default_port_disabled) -%}
@@ -121,11 +121,12 @@ interface {
     ethernet-switching-options {
         mac-table-aging-time: 300
     }
-    cut-through-mode: {% if switch_cut_through_mode %}true{% else %}false{% endif %}
+/*    cut-through-mode: {% if switch_cut_through_mode %}true{% else %}false{% endif %}*/
 }
 ip {
     routing {
-        enable: false
+        enable: {% if switch_routing_enabled %}true{% else %}false{% endif %}
+
     }
 }
 multicast-interface {
@@ -145,7 +146,7 @@ protocols {
                 ( switch_ports[port_number|string] is defined and
                   switch_ports[port_number|string]['template'] is defined and
                   switch_templates[switch_ports[port_number|string].template].dhcp_server|default(False) )-%}
-            port "{%if port_number <= 48 %}ge{% else %}te{% endif %}-1/1/{{ port_number }}" {
+            port "{% if port_number <= 48 %}ge-1/1/{{ port_number }}{% else %}te-1/1/{{ port_number - 48 }}{% endif %}" {
                 trust: true
             }
             {%- endif -%}
