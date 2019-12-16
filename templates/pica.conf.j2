@@ -250,6 +250,22 @@ system {
 vlan-interface {
     loopback {
     }
+    {% if switch_create_l3_interfaces %}
+    {% for vlan in switch_vlans -%}
+    interface "l_{{ vlan }}" {
+        dhcp: false
+        vif "i_{{ vlan }}" {
+        {% for address in switch_vlans[vlan].addresses|default([]) %}
+            address {{ address|ipaddr('address') }} {
+                prefix-length: {{ address|ipaddr('prefix') }}
+            }
+        {% endfor %}
+
+        }
+    }
+
+    {% endfor %}
+    {% endif %}
 }
 vlans {
     {% for vlan in switch_vlans -%}
@@ -257,7 +273,7 @@ vlans {
     vlan-id {{ switch_vlans[vlan].id }} {
     description: "{{ vlan }}"
         vlan-name: "{{ vlan }}"
-        l3-interface: ""
+        l3-interface: "{% if switch_create_l3_interfaces %}l_{{ vlan }}{% endif %}"
     }
     {% endfor %}
 
