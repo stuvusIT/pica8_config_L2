@@ -13,3 +13,5 @@ switch_ntp_server: 0.pool.ntp.org
 switch_time_zone: Europe/Berlin
 switch_vlans:
   default: 1
+switch_routing_enabled: false
+switch_create_l3_interfaces: false

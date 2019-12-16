@@ -98,14 +98,14 @@ interface {
         power-preemphasis-level: 0
         family {
             ethernet-switching {
-                native-vlan-id: {{ switch_vlans[port.native_vlan|default(switch_default_vlan)] }}
+                native-vlan-id: {{ switch_vlans[port.native_vlan|default(switch_default_vlan)].id }}
                 {% if port.members|default(switch_default_members)|length <= 0 -%}
                 port-mode: "access"
                 {%- else -%}
                 port-mode: "trunk"
                 vlan {
                     {% for vlan in port.members|default(switch_default_members) -%}
-                    members {{ switch_vlans[vlan] }}
+                    members {{ switch_vlans[vlan].id }}
                     {% endfor -%}
                 }
                 {%- endif %}
@@ -156,7 +156,7 @@ protocols {
                 timeout: "{{ switch_dhcp_binding_timeout }}"
             }
             {% for vlan in switch_dhcp_snooping_vlans -%}
-            vlan {{ switch_vlans[vlan] }}
+            vlan {{ switch_vlans[vlan].id }}
             {%- else -%}
             vlan all
             {%- endfor %}
@@ -253,7 +253,7 @@ vlan-interface {
 vlans {
     {% for vlan in switch_vlans -%}
 
-    vlan-id {{ switch_vlans[vlan] }} {
+    vlan-id {{ switch_vlans[vlan].id }} {
     description: "{{ vlan }}"
         vlan-name: "{{ vlan }}"
         l3-interface: ""
