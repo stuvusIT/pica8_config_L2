@@ -209,11 +209,7 @@ system {
             idle-timeout: 0
         }
     }
-    ntp-server-ip {% if lookup('dig', switch_ntp_server) == 'NXDOMAIN' %}
-                      {{- switch_ntp_server }}
-                  {% else %}
-                      {{- lookup('dig', switch_ntp_server).split(',')[0] }}
-                  {%- endif %}
+    ntp-server-ip {{ switch_ntp_server }}
 
     inband {
         enable: false

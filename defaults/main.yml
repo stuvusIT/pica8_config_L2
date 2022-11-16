@@ -9,7 +9,7 @@ switch_dhcp_snooping_vlans: []
 switch_dhcp_bind_file: /tmp/run/dhcp_bind
 switch_dhcp_binding_timeout: 8
 switch_cut_through_mode: false
-switch_ntp_server: 0.pool.ntp.org
+switch_ntp_server: 129.69.1.153
 switch_time_zone: Europe/Berlin
 switch_vlans:
   default: 1
